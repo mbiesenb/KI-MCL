@@ -20,13 +20,34 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Random;
 
+
+/**
+ *  SAMPLE -->
+ *
+ *
+ *
+ *  Ablauf:
+ *      1. Initialer Belief
+ *         k Samples auf dem Bildschirm erstellen, die Gleichverteilt auf allen Möglichen Positionen verteilt sind
+ *         Der importance factor ist 1/k.
+ *         Ein Partikel ( Sample ) repräsentiert eine Position
+ *
+ *         Ziel: Partikel ( Samples ) zu generieren, welche am ( Hochpunkt ) der Wahrscheinlichkeitsdichte liegen
+ *
+ *      2. Belief aktualisieren
+ *          Ein Sample wird zufällig aus der Menge genommen
+ *          Der importance factor gibt die Auswahlwahrscheinlichkeit.
+ */
 public class Main extends Application {
     //private static final int SCALE_FACTOR = 1;
     public static final int CANVAS_WITDH = 1200;
-    public static final int CANVAS_HEIGHT = 500;
+    public static final int CANVAS_HEIGHT = 300;
+
     public static final int SVG_MAX_WIDTH = 600;
     public static final int SVG_MAX_HEIGHT = 150;
-    public static final int PARTICLE_COUNT = 200000;
+    public static final int PARTICLE_COUNT = 1;
+    public static final int BUILDING_WIDTH_CM = 600;
+    public static final int BUILDING_HEIGHT_CM = 150;
     public static final int PARTICLE_LENGTH = 7;
 
     Map m = new Map(SVG_MAX_WIDTH, SVG_MAX_HEIGHT);
@@ -75,6 +96,22 @@ public class Main extends Application {
             double dline =  Math.sqrt(Math.pow(b.x - a.x , 2) + Math.pow(b.y - b.y , 2) );
             double dPoint =  Math.sqrt(Math.pow(c.x - a.x , 2) + Math.pow(c.y - b.y , 2) );
             return dPoint <= dline;
+    }
+    private double getAbsDistance(Point relA , Point relB){
+        int pixelsA_X = absMapX(relA.x);
+        int pixelsA_Y = absMapY(relA.y);
+        int pixelsB_X = absMapX(relB.x);
+        int pixelsB_Y = absMapX(relB.y);
+        return distance(new Point(pixelsA_X , pixelsA_Y) ,  new Point(pixelsB_X , pixelsB_Y));
+    }
+    private double absRealX ( double rel){
+        return rel * (double)BUILDING_WIDTH_CM;
+    }
+    private double absRealY ( double rel){
+        return rel * (double)BUILDING_HEIGHT_CM;
+    }
+    private Point absRealPoint ( Point relPoint ){
+        return new Point(absRealX(relPoint.x) , absRealY(relPoint.y));
     }
 
     private ArrayList<Point> rayCast (Point from , Point to ,  ArrayList<Line> lines){
@@ -166,7 +203,7 @@ public class Main extends Application {
     private void initParticles ( ){
         int olli = 0;
         Random rand = new Random();
-        for (int i = 0; i < PARTICLE_COUNT; i++) {
+        for (int i = 0; i < PARTICLE_COUNT;) {
             Point particleCenter = new Point(rand.nextDouble(), rand.nextDouble());//rand.nextInt(150));
             if (m.checkPointInsidePolygon(particleCenter)) {
                 double randRotation = rand.nextDouble() * Math.PI  * 2;
@@ -177,12 +214,18 @@ public class Main extends Application {
 
                 Point particleDirection = new Point(x,  y);
                 ArrayList<Point> intersects = rayCast(particleCenter , particleDirection , m.getLines());
-                Point shortestIntersect = getShortest(particleCenter , intersects);
 
+                Point shortestIntersect = getShortest(particleCenter , intersects);
                 Particle particle = new Particle(particleCenter, randRotation);
-                particle.intersectPoint = shortestIntersect;
+                double intersectDistance = distance(absRealPoint(particleCenter) , absRealPoint(shortestIntersect));
+                //absDistance =  distance(new Point( absMapX(particle) , absMapY() ) , new Point(absMapX() , absMapY()));
+                // Set the magic stuff
+                particle.setIntersect(shortestIntersect , absMapPoint(particleCenter) , intersectDistance); ;
+                System.out.println("Intersect Distance: " + intersectDistance);
+
                 partices.add(particle);
                 m.addParticle(particle);
+                i++;
             }
         }
 
