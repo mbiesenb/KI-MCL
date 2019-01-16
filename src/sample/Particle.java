@@ -1,6 +1,9 @@
 package sample;
 
-public class Particle {
+import java.util.ArrayList;
+
+public class Particle implements IMoveController {
+
     Point centerPoint;
     double rotation;
     Intersect intersectPoint;
@@ -8,18 +11,57 @@ public class Particle {
     public Particle(Point centerPoint, double rotation){
         this.centerPoint = centerPoint;
         this.rotation = rotation;
+
+
     }
-    public void setIntersect( Point relPoint, Point absPoint , double absDistance){
+    public void calculateIntersect(ArrayList<Line> lines ){
+        Point direction = (Helper.getRotationPoint(centerPoint,0.050 , rotation));
+        ArrayList<Point> intersects = Helper.rayCast(centerPoint , direction , lines);
+        Point shortestIntersect = Helper.getShortest(centerPoint , intersects);
+        double intersectDistance = Helper.distance(Helper.absRealPoint(centerPoint) , Helper.absRealPoint(shortestIntersect));
+        Point absPoint = Helper.absMapPoint(centerPoint);
+        Intersect intersect = new Intersect(shortestIntersect , intersectDistance);
+        this.intersectPoint = intersect;
+    }
+    /*public void setIntersect( Point relPoint, Point absPoint , double absDistance){
         intersectPoint = new Intersect(relPoint , absPoint , absDistance);
+    }*/
+    private Point absRealPoint ( Point relPoint ){
+        return new Point(Helper.absRealX(relPoint.x) , Helper.absRealY(relPoint.y));
     }
+
+    @Override
+    public void moveForward(int cm) {
+        Point currentAbsPosition = Helper.absRealPoint(centerPoint);
+        Point maginalizedRotationalPoint = Helper.getRotationPoint(centerPoint , cm , rotation);
+        Point newRealPoint = Helper.vectorAdd(currentAbsPosition , maginalizedRotationalPoint);
+        centerPoint = Helper.getRelByRealPoint(newRealPoint);
+    }
+
+    @Override
+    public void moveBackward(int cm) {
+        Point currentAbsPosition = Helper.absRealPoint(centerPoint);
+        Point maginalizedRotationalPoint = Helper.getRotationPoint(centerPoint , cm , rotation);
+        Point newRealPoint = Helper.vectorAdd(currentAbsPosition , maginalizedRotationalPoint);
+        centerPoint = Helper.getRelByRealPoint(newRealPoint);
+    }
+
+    @Override
+    public void turnLeft(int angle) {
+
+    }
+
+    @Override
+    public void turnRight(int angle) {
+
+    }
+
     class Intersect{
         Point relPoint;
-        Point absPoint;
         double absDistance;
 
-        public Intersect(Point relPoint, Point absPoint, double absDistance) {
+        public Intersect(Point relPoint, double absDistance) {
             this.relPoint = relPoint;
-            this.absPoint = absPoint;
             this.absDistance = absDistance;
         }
     }
