@@ -17,6 +17,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Random;
 
 public class Main extends Application {
@@ -58,7 +59,67 @@ public class Main extends Application {
     private int absMapY ( double rel){
         return  abs(CANVAS_HEIGHT, rel);
     }
+    private Point absMapPoint ( Point point){
+        return new Point(abs(CANVAS_WITDH , point.x) , abs(CANVAS_HEIGHT , point.y));
+    }
+    private double distance ( Point a , Point b ){
+        return Math.sqrt(Math.pow(b.x - a.x , 2) + Math.pow(b.y - b.y , 2) );
+    }
+    private boolean isBetween( Point a , Point b , Point c){
+            double dline =  Math.sqrt(Math.pow(b.x - a.x , 2) + Math.pow(b.y - b.y , 2) );
+            double dPoint =  Math.sqrt(Math.pow(c.x - a.x , 2) + Math.pow(c.y - b.y , 2) );
+            return dPoint <= dline;
+    }
 
+    private ArrayList<Point> rayCast (Point from , Point to ,  ArrayList<Line> lines){
+        ArrayList<Point> points = new ArrayList<>();
+        Point shortest = null;
+        for (Line l : lines) {
+            Point lineA = new Point(l.x1, l.y1);
+            Point lineB = new Point(l.x2, l.y2);
+            Point xp = calculateInterceptionPoint(from.translate(), to.translate(), lineA.translate(), lineB.translate()).translate();
+
+            if (xp != null) {
+                boolean add = false;
+                if ( lineA.x == lineB.x){
+                    if ( xp.y >= lineA.y && xp.y <= lineB.y){
+                        add = true;
+                    }
+                    if ( xp.y >= lineB.y && xp.y <= lineA.y){
+                        add = true;
+                    }
+                }
+                else if ( lineA.y == lineB.y){
+                    if ( xp.x >= lineA.x && xp.x <= lineB.x){
+                        add = true;
+                    }
+                    if ( xp.x >= lineB.x && xp.x <= lineA.x){
+                        add = true;
+                    }
+                }
+                if ( add) {
+                    points.add(xp);
+                }
+            }
+        }
+        return points;
+    }
+
+    private Point getShortest( Point from , ArrayList<Point> points){
+        Point shortest = null;
+        for ( Point p : points){
+            if ( shortest == null){
+                shortest = p;
+            }else{
+                if ( distance(from , p)  <  distance(shortest , p)){
+                    shortest = p;
+                }
+            }
+        }
+        return shortest;
+    }
+
+    private voi
     private void drawMap(GraphicsContext gc) {
 
         File map = new File("map.svg");
@@ -95,10 +156,12 @@ public class Main extends Application {
         gc.setLineWidth(2);
 
         int olli = 0;
-        for (int i = 0; i < 3; ) {
+        for (int i = 0; i < 50; ) {
             Point randPoint = new Point(rand.nextDouble(), rand.nextDouble());//rand.nextInt(150));
+            //Point randPoint = new Point(0.5, 0.5);//rand.nextInt(150));
             if (m.checkPointInsidePolygon(randPoint)) {
                 double randRotation = rand.nextDouble() * Math.PI  * 2;
+                //double randRotation = 0.1* Math.PI  * 2;
                 double r = 0.050;
                 double x = randPoint.x + Math.cos(randRotation) * r;
                 double y = randPoint.y  + Math.sin(randRotation) * r  * (CANVAS_WITDH / CANVAS_HEIGHT); // <-- Good quess
@@ -106,22 +169,16 @@ public class Main extends Application {
                 Point p = new Point(x,  y);
                 gc.strokeLine(absMapX(randPoint.x), absMapY(randPoint.y ), absMapX(x), absMapY(y));
                 gc.fillOval(absMapX(randPoint.x), absMapY(randPoint.y ), 4,4 );
-                //gc.fillText(randPoint.translate(). toString(), absMapX(randPoint.x), absMapY(randPoint.y));
                 m.addParticle(new Particle(randPoint, randRotation));
                 i++;
-                Point shortestPoint = null;
-                double shortestDist = 50000000;
-
-                for (Line l : m.getLines()) {
-                    Point xp = calculateInterceptionPoint(randPoint.translate(), p.translate(), new Point(l.x1, l.y1).translate(), new Point(l.x2, l.y2).translate());
-                    //Point xp = calculateInterceptionPoint(randPoint, p, new Point(l.x1, l.y1), new Point(l.x2, l.y2));
-                    if (xp != null) {
-                        gc.fillOval(absMapX(xp.translate().x), absMapY( xp.translate().y), 8, 8);
-                    }
-                }
-
+                int bum = 0;
             }
         }
+        ArrayList<Point> intersects = rayCast()
+        if ( shortest != null) {
+            gc.fillOval(absMapX(shortest.x), absMapY(shortest.y), 8, 8);
+        }
+
         System.out.println(olli);
         int numOfPoints = m.getPolygonPointCount();
         double[] x_point_arr = new double[numOfPoints];
