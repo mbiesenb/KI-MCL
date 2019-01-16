@@ -7,6 +7,7 @@ public class Map {
     private ArrayList<Line> lines = new ArrayList<Line>();
     private ArrayList<Point> polygon = new ArrayList<Point>();
     private ArrayList<Particle> particles = new ArrayList<Particle>();
+
     private int x, y;
 
     public Map(int x, int y) {

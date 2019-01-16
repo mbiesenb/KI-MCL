@@ -26,7 +26,12 @@ public class Main extends Application {
     public static final int CANVAS_HEIGHT = 500;
     public static final int SVG_MAX_WIDTH = 600;
     public static final int SVG_MAX_HEIGHT = 150;
+    public static final int PARTICLE_COUNT = 200000;
     public static final int PARTICLE_LENGTH = 7;
+
+    Map m = new Map(SVG_MAX_WIDTH, SVG_MAX_HEIGHT);
+    public ArrayList<Particle> partices = new ArrayList<>();
+
 
     @Override
     public void start(Stage primaryStage) throws Exception {
@@ -34,8 +39,9 @@ public class Main extends Application {
         Group root = new Group();
         //Canvas canvas = new Canvas(CANVAS_WITDH+ 2, CANVAS_HEIGHT+ 2);
         Canvas canvas = new Canvas(CANVAS_WITDH, CANVAS_HEIGHT);
-
         GraphicsContext gc = canvas.getGraphicsContext2D();
+        initWall();
+        initParticles();
         drawMap(gc);
         root.getChildren().add(canvas);
         primaryStage.setScene(new Scene(root));
@@ -119,13 +125,10 @@ public class Main extends Application {
         return shortest;
     }
 
-    private voi
-    private void drawMap(GraphicsContext gc) {
-
+    private void initWall(){
         File map = new File("map.svg");
         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
         Document doc;
-        Map m = new Map(SVG_MAX_WIDTH, SVG_MAX_HEIGHT);
         Random rand = new Random();
 
         try {
@@ -145,54 +148,83 @@ public class Main extends Application {
                     m.addPoint(new Point(rel(SVG_MAX_WIDTH , x1), rel(SVG_MAX_HEIGHT , y1)));
                 }
             }
-
         } catch (Exception e) {
             System.out.println(e.toString());
         }
 
 
-        gc.setFill(Color.BLACK);
-        gc.setStroke(Color.DARKRED);
-        gc.setLineWidth(2);
-
-        int olli = 0;
-        for (int i = 0; i < 50; ) {
-            Point randPoint = new Point(rand.nextDouble(), rand.nextDouble());//rand.nextInt(150));
-            //Point randPoint = new Point(0.5, 0.5);//rand.nextInt(150));
-            if (m.checkPointInsidePolygon(randPoint)) {
-                double randRotation = rand.nextDouble() * Math.PI  * 2;
-                //double randRotation = 0.1* Math.PI  * 2;
-                double r = 0.050;
-                double x = randPoint.x + Math.cos(randRotation) * r;
-                double y = randPoint.y  + Math.sin(randRotation) * r  * (CANVAS_WITDH / CANVAS_HEIGHT); // <-- Good quess
-
-                Point p = new Point(x,  y);
-                gc.strokeLine(absMapX(randPoint.x), absMapY(randPoint.y ), absMapX(x), absMapY(y));
-                gc.fillOval(absMapX(randPoint.x), absMapY(randPoint.y ), 4,4 );
-                m.addParticle(new Particle(randPoint, randRotation));
-                i++;
-                int bum = 0;
-            }
-        }
-        ArrayList<Point> intersects = rayCast()
-        if ( shortest != null) {
-            gc.fillOval(absMapX(shortest.x), absMapY(shortest.y), 8, 8);
-        }
-
-        System.out.println(olli);
-        int numOfPoints = m.getPolygonPointCount();
+        /*int numOfPoints = m.getPolygonPointCount();
         double[] x_point_arr = new double[numOfPoints];
         double[] y_point_arr = new double[numOfPoints];
         int i = 0;
         for (Point p : m.getPolygon()) {
             x_point_arr[i] = (double) absMapX(p.x);
             y_point_arr[i] = (double) absMapY( p.y);
-            i++;
+        }*/
+    }
+
+    private void initParticles ( ){
+        int olli = 0;
+        Random rand = new Random();
+        for (int i = 0; i < PARTICLE_COUNT; i++) {
+            Point particleCenter = new Point(rand.nextDouble(), rand.nextDouble());//rand.nextInt(150));
+            if (m.checkPointInsidePolygon(particleCenter)) {
+                double randRotation = rand.nextDouble() * Math.PI  * 2;
+                //double randRotation = 0.1* Math.PI  * 2;
+                double r = 0.050;
+                double x = particleCenter.x + Math.cos(randRotation) * r;
+                double y = particleCenter.y  + Math.sin(randRotation) * r  * (CANVAS_WITDH / CANVAS_HEIGHT); // <-- Good quess
+
+                Point particleDirection = new Point(x,  y);
+                ArrayList<Point> intersects = rayCast(particleCenter , particleDirection , m.getLines());
+                Point shortestIntersect = getShortest(particleCenter , intersects);
+
+                Particle particle = new Particle(particleCenter, randRotation);
+                particle.intersectPoint = shortestIntersect;
+                partices.add(particle);
+                m.addParticle(particle);
+            }
         }
-        gc.strokePolyline(x_point_arr, y_point_arr, numOfPoints);
 
 
-        System.out.println(m.checkPointInsidePolygon(new Point(205, 10)));
+        //System.out.println(olli);
+
+        //gc.strokePolyline(x_point_arr, y_point_arr, numOfPoints);
+        //System.out.println(m.checkPointInsidePolygon(new Point(205, 10)));
+    }
+    private void drawMap(GraphicsContext gc) {
+
+        gc.setFill(Color.BLACK);
+        gc.setStroke(Color.DARKRED);
+        gc.setLineWidth(2);
+
+        for ( Line l : m.getLines()){
+            gc.strokeLine(absMapX(l.x1) , absMapY(l.y1) , absMapX(l.x2 ), absMapY(l.y2));
+        }
+        for ( Particle particle : partices) {
+            // draw Particle here
+
+            double r = 0.005;
+            double x = particle.centerPoint.x + Math.cos(particle.rotation) * r;
+            double y = particle.centerPoint.y  + Math.sin(particle.rotation) * r  * (CANVAS_WITDH / CANVAS_HEIGHT); // <-- Good quess
+
+            double deltaX = Math.cos(particle.rotation) * r;
+            double deltaY = Math.sin(particle.rotation) * r  * (CANVAS_WITDH / CANVAS_HEIGHT); // <-- Good quess
+
+
+
+            Point lineA = new Point(particle.centerPoint.x - deltaX , particle.centerPoint.y - deltaY);
+            Point lineB = new Point(particle.centerPoint.x + deltaX , particle.centerPoint.y + deltaY);
+
+            gc.strokeLine(absMapX(lineA.x), absMapY(lineA.y), absMapX(lineB.x), absMapY(lineB.y));
+            gc.fillOval(absMapX(particle.centerPoint.x)-3, absMapY(particle.centerPoint.y)-3, 6, 6);
+            //Point particleDirection = new Point(x,  y);
+            //gc.strokeLine(absMapX(particle.centerPoint.x), absMapY(particle.centerPoint.y), absMapX(particleDirection.x), absMapY(particleDirection.y));
+            //gc.fillOval(absMapX(randPoint.x), absMapY(randPoint.y), 4, 4);
+        }
+
+
+
 
     }
 

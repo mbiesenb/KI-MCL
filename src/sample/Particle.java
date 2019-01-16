@@ -1,11 +1,12 @@
 package sample;
 
 public class Particle {
-    Point p;
+    Point centerPoint;
     double rotation;
+    Point intersectPoint;
 
-    public Particle(Point p, double rotation){
-        this.p = p;
+    public Particle(Point centerPoint, double rotation){
+        this.centerPoint = centerPoint;
         this.rotation = rotation;
     }
 
