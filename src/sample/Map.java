@@ -1,8 +1,24 @@
 package sample;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.File;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class Map {
+
+
+    public static final int SVG_MAX_WIDTH = 600;
+    public static final int SVG_MAX_HEIGHT = 150;
+    public static final int PARTICLE_COUNT = 1;
+
+
 
     private ArrayList<Line> lines = new ArrayList<Line>();
     private ArrayList<Point> polygon = new ArrayList<Point>();
@@ -13,6 +29,9 @@ public class Map {
     public Map(int x, int y) {
         this.x = x;
         this.y = y;
+
+        initWall();
+        initParticles();
     }
 
     public void addLine(Line l){
@@ -29,6 +48,10 @@ public class Map {
 
     public ArrayList<Line> getLines(){
         return lines;
+    }
+
+    public ArrayList<Particle> getParticles(){
+        return particles;
     }
 
     public ArrayList<Point> getPolygon(){
@@ -56,6 +79,50 @@ public class Map {
 
         return c;
     }
+    private void initWall(){
+        File map = new File("map.svg");
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        Document doc;
+        Random rand = new Random();
 
+        try {
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            doc = dBuilder.parse(map);
+            doc.getDocumentElement().normalize();
+            NodeList nList = doc.getElementsByTagName("line");
+            for (int temp = 0; temp < nList.getLength(); temp++) {
+                Node n = nList.item(temp);
+                if (n.getNodeType() == Node.ELEMENT_NODE) {
+                    NamedNodeMap nnm = n.getAttributes();
+                    int x1 = Integer.parseInt(nnm.getNamedItem("x1").getNodeValue().replace("px", ""));
+                    int y1 = Integer.parseInt(nnm.getNamedItem("y1").getNodeValue().replace("px", ""));
+                    int x2 = Integer.parseInt(nnm.getNamedItem("x2").getNodeValue().replace("px", ""));
+                    int y2 = Integer.parseInt(nnm.getNamedItem("y2").getNodeValue().replace("px", ""));
+                    addLine(new Line(Helper.rel(SVG_MAX_WIDTH, x1), Helper.rel(SVG_MAX_HEIGHT , y1), Helper.rel(SVG_MAX_WIDTH , x2), Helper.rel(SVG_MAX_HEIGHT , y2)));
+                    addPoint(new Point(Helper.rel(SVG_MAX_WIDTH , x1), Helper.rel(SVG_MAX_HEIGHT , y1)));
+                }
+            }
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
+    }
+
+    private void initParticles ( ){
+        Random rand = new Random();
+        for (int i = 0; i < PARTICLE_COUNT;) {
+            Point particleCenter = new Point(rand.nextDouble(), rand.nextDouble());//rand.nextInt(150));
+            //Point particleCenter = new Point(0.65, 0.15);//rand.nextInt(150));
+            if (checkPointInsidePolygon(particleCenter)) {
+                double randRotation = rand.nextDouble() * Math.PI  * 2;
+                //double randRotation = (Math.PI *2) * (160.0/360.0);
+                Particle particle = new Particle(particleCenter , randRotation);
+                particle.calculateIntersect(getLines());
+                particles.add(particle);
+                addParticle(particle);
+                i++;
+            }
+        }
+
+    }
 
 }

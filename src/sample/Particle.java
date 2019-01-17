@@ -18,10 +18,10 @@ public class Particle implements IMoveController {
         Point direction = (Helper.getRotationPoint(centerPoint,0.050 , rotation));
         ArrayList<Point> intersects = Helper.rayCast(centerPoint , direction , lines);
         Point shortestIntersect = Helper.getShortest(centerPoint , intersects);
-        double intersectDistance = Helper.distance(Helper.absRealPoint(centerPoint) , Helper.absRealPoint(shortestIntersect));
-        Point absPoint = Helper.absMapPoint(centerPoint);
-        Intersect intersect = new Intersect(shortestIntersect , intersectDistance);
+        double realIntersectDistance = Helper.distance(Helper.absRealPoint(centerPoint) , Helper.absRealPoint(shortestIntersect));
+        Intersect intersect = new Intersect(shortestIntersect , realIntersectDistance);
         this.intersectPoint = intersect;
+        System.out.println("Distance: "+  realIntersectDistance );
     }
     /*public void setIntersect( Point relPoint, Point absPoint , double absDistance){
         intersectPoint = new Intersect(relPoint , absPoint , absDistance);
@@ -42,18 +42,19 @@ public class Particle implements IMoveController {
     public void moveBackward(int cm) {
         Point currentAbsPosition = Helper.absRealPoint(centerPoint);
         Point maginalizedRotationalPoint = Helper.getRotationPoint(centerPoint , cm , rotation);
-        Point newRealPoint = Helper.vectorAdd(currentAbsPosition , maginalizedRotationalPoint);
+        Point newRealPoint = Helper.vectorSub(currentAbsPosition , maginalizedRotationalPoint);
         centerPoint = Helper.getRelByRealPoint(newRealPoint);
     }
 
     @Override
-    public void turnLeft(int angle) {
-
+    public void turnLeft(double angle) {
+        this.rotation -= angle;
     }
 
     @Override
-    public void turnRight(int angle) {
-
+    public void turnRight(double angle) {
+        this.rotation+=angle;
+        this.rotation = this.rotation % (2*Math.PI);
     }
 
     class Intersect{
